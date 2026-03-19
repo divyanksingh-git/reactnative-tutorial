@@ -1,19 +1,64 @@
+import MovieCard from "@/components/MovieCard";
 import SearchBar from "@/components/SearchBar";
 import { icons } from "@/constants/icons";
 import { images } from "@/constants/images";
-import { Image, ScrollView, Text, View } from "react-native";
+import { useTMDBInfinite } from "@/service/swr";
+import { useRouter } from "expo-router";
+import { ActivityIndicator, FlatList, Image, Text, View } from "react-native";
 
 export default function Home() {
+  const router = useRouter();
+  const moviesList = useTMDBInfinite("/discover/movie", "");
   return (
     <View className="flex-1 bg-primary h-full w-full">
       <Image source={images.bg} className="w-full absolute z-0" />
-      <ScrollView className="flex-1 px-5 mb-20 w-full">
+      <View className="flex-1 px-5 mb-20 w-full h-full">
         <View className="flex-row w-full h-max flex justify-center items-center pr-[32px] pl-[32px]">
           <Image source={icons.logo} className="w-12 h-10 mt-8 mb-5 mr-8" />
           <Text className="text-white text-[24px] font-bold">Cinniflex</Text>
         </View>
-        <SearchBar />
-      </ScrollView>
+        <SearchBar
+          placeholder="Search for a movie"
+          value={""}
+          onChangeText={() => {}}
+          onPress={() => {
+            router.push("/search");
+          }}
+        />
+        {moviesList.isLoading ? (
+          <ActivityIndicator
+            size="large"
+            color="#0000ff"
+            className="mt-10 self-center"
+          />
+        ) : (
+          <>
+            <Text className="font-bold text-lg mt-5 mb-3 text-white">
+              Popular Movies
+            </Text>
+            <FlatList
+              className="my-4 flex-1"
+              contentContainerClassName="pb-10"
+              data={moviesList.data?.flat()}
+              renderItem={({ item }) => <MovieCard {...item} />}
+              keyExtractor={(item) => item.id}
+              numColumns={3}
+              columnWrapperClassName="justify-between mb-4"
+              onEndReached={() => {
+                if (!moviesList.isValidating) {
+                  moviesList.setSize((size) => size + 1);
+                }
+              }}
+              onEndReachedThreshold={2}
+              ListFooterComponent={
+                moviesList.isValidating ? (
+                  <ActivityIndicator size="small" color="#ab8bff" className="my-4" />
+                ) : null
+              }
+            />
+          </>
+        )}
+      </View>
     </View>
   );
 }
